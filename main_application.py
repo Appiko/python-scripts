@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 ##################################################################################
 #Every test in testing firmware should be designed in such a way that output over#
@@ -18,6 +18,9 @@ import MySQLdb
 import requests
 import binascii
 import serial
+import subprocess
+import sys
+from pygdbmi.gdbcontroller import GdbController
 
 #important funtion:
 
@@ -126,6 +129,55 @@ def getAllData(txt_file):
 #######################MAIN FUNCTION STARTS FROM HERE#############################
 ##################################################################################
 
+
+#Checking for Hardware and Toolchain
+##################################################################################
+#This part of program will check presence of BMP debugger and ARM cross compiler##
+#toolchain. if either of them are not present then program will be terminated.####
+##################################################################################
+
+debugger_flag = 1
+arm_toolchain_flag = 1
+board_detect_flag = 1
+try:
+    subprocess.check_output(["ls", "/dev/ttyBmpTarg"])
+
+except:
+    debugger_flag = 0
+try:
+    subprocess.check_output(["ls", "/usr/local/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gdb"])
+except:	
+    arm_toolchain_flag = 0
+ 
+#This part will check is board is connected properly or not by creating and ######
+#reading a log file for GDB.######################################################
+
+os.system("touch gdb_log.txt")
+GDB = "/usr/local/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gdb"
+os.system(GDB + " -ex 'set loggin file ./gdb_log.txt' -ex 'set logging overwrite on' -ex 'set logging redirect on' -ex 'set logging on' -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'set logging off' -ex 'quit' ")
+log_file = open("./gdb_log.txt","r")
+file_contents = log_file.readlines()
+log_file.close()
+err_msg = (file_contents[len(file_contents) -1])
+print(err_msg)
+if((err_msg == "SW-DP scan failed!\n")):
+    board_detect_flag = 0
+
+os.system("rm gdb_log.txt")
+os.system("clear")
+if(debugger_flag == 0):
+    print("Debugger not present..!!")
+if(arm_toolchain_flag == 0):
+    print("ARM toolchain not present..!!")
+if(board_detect_flag == 0):
+    print("Board not detected..!!")
+if(not(debugger_flag & arm_toolchain_flag & board_detect_flag)):
+    print("Exiting the program")
+    sys.exit(0)
+
+
+
+
 #Generation of first part
 
 ##################################################################################
@@ -141,9 +193,10 @@ factory = config_load['Factory']
 first_part = product + revision + factory
 
 #creating directry with name = first_part
-os.system("mkdir "+first_part)
-
-
+try:
+    subprocess.call("mkdir "+first_part)
+except OSError: 
+    pass
 
 #Generation of second part
 
@@ -219,7 +272,6 @@ else :
     else :
         board_no = (first_part + second_part + "0001")
 infile.close()
-print(board_no)
 
 #Generation of .hex file
 ##################################################################################
@@ -240,8 +292,6 @@ reg_UICR_0 = (binascii.hexlify(board_list[12:16]))
 reg_UICR_1 = (binascii.hexlify(board_list[8:12]))
 reg_UICR_2 = (binascii.hexlify(board_list[4:8]))
 reg_UICR_3 = (binascii.hexlify(board_list[0:4]))
-
-
 
 #At the end of end of every line of hex file there is checksum byte. Which is ####
 #LSB of 2's complement of sum of all bytes presents in that line. This is useful##
@@ -288,6 +338,8 @@ product_id_hex.write(hex_file_contents)
 product_id_hex.close()
 
 
+
+
 #Program execution and Writing test data in txt file
 
 ##################################################################################
@@ -305,9 +357,7 @@ flag = 0
 mrg_hex = str("srec_cat "+"./"+first_part+"/product_id.hex -Intel "+"./source_hex/"+first_part+"v*.hex -Intel"+" -O "+"./"+first_part+"/"+first_part+".hex -Intel --line-length=44")
 os.system(mrg_hex)
 
-
 GDB = "/usr/local/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gdb"
-
 eraseall = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor tpwr enable' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'mon erase_mass' -ex 'detach' -ex 'quit';")
 os.system(eraseall)
 
@@ -389,3 +439,4 @@ insert_data_from_(txt_input, first_part, mysql_cursor, board_no)
 conn.commit()
 mysql_cursor.close()
 conn.close()
+
