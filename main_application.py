@@ -154,7 +154,7 @@ except:
 
 os.system("touch gdb_log.txt")
 GDB = "/usr/local/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gdb"
-os.system(GDB + " -ex 'set loggin file ./gdb_log.txt' -ex 'set logging overwrite on' -ex 'set logging redirect on' -ex 'set logging on' -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'set logging off' -ex 'quit' ")
+os.system(GDB + " -ex 'set loggin file ./gdb_log.txt' -ex 'set logging overwrite on' -ex 'set logging redirect on' -ex 'set logging on' -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor tpwr enable' -ex 'monitor swdp_scan' -ex 'set logging off' -ex 'quit' ")
 log_file = open("./gdb_log.txt","r")
 file_contents = log_file.readlines()
 log_file.close()
@@ -172,7 +172,7 @@ if(arm_toolchain_flag == 0):
 if(board_detect_flag == 0):
     print("Board not detected..!!")
 if(not(debugger_flag & arm_toolchain_flag & board_detect_flag)):
-    print("Exiting the program")
+    input("Press Enter to exit..!!")
     sys.exit(0)
 
 
@@ -194,7 +194,7 @@ first_part = product + revision + factory
 
 #creating directry with name = first_part
 try:
-    subprocess.call("mkdir "+first_part)
+    os.system("mkdir "+first_part)
 except OSError: 
     pass
 
@@ -439,4 +439,11 @@ insert_data_from_(txt_input, first_part, mysql_cursor, board_no)
 conn.commit()
 mysql_cursor.close()
 conn.close()
+
+
+print("Board Number = "+board_no)
+file_exit_flag = 'n'
+while(not(file_exit_flag == 'y' or file_exit_flag == 'Y')):
+    print("Write the board number on board..!!")
+    file_exit_flag = input("Done?(y/n):")
 
