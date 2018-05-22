@@ -445,5 +445,5 @@ print("Board Number = "+board_no)
 file_exit_flag = 'n'
 while(not(file_exit_flag == 'y' or file_exit_flag == 'Y')):
     print("Write the board number on board..!!")
-    file_exit_flag = input("Done?(y/n):")
+    file_exit_flag = raw_input("Done?(y/n):")
 
