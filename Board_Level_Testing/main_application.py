@@ -43,7 +43,7 @@ def extractTitles(txt_format):
     if(txt_format != "END\n"):
         txt_format = list(txt_format)
         txt_format = txt_format[:txt_format.index(':')-1]
-        txt_format = ''.join(   txt_format)
+        txt_format = ''.join(txt_format)
         return str(txt_format)
     else:
         return
@@ -172,7 +172,7 @@ if(arm_toolchain_flag == 0):
 if(board_detect_flag == 0):
     print("Board not detected..!!")
 if(not(debugger_flag & arm_toolchain_flag & board_detect_flag)):
-    input("Press Enter to exit..!!")
+    raw_input("Press Enter to exit..!!")
     sys.exit(0)
 
 
@@ -354,14 +354,14 @@ data_file = open(fp_txt_input, "w")
 port = serial.Serial("/dev/ttyBmpTarg", baudrate=1000000, bytesize = serial.EIGHTBITS, timeout = 40)
 flag = 0
 
-mrg_hex = str("srec_cat "+"./"+first_part+"/product_id.hex -Intel "+"./source_hex/"+first_part+"v*.hex -Intel"+" -O "+"./"+first_part+"/"+first_part+".hex -Intel --line-length=44")
+mrg_hex = str("srec_cat "+"./"+first_part+"/product_id.hex -Intel "+"./source_hex/"+first_part+"_v_*.hex -Intel"+" -O "+"./"+first_part+"/"+first_part+".hex -Intel --line-length=44")
 os.system(mrg_hex)
 
 GDB = "/usr/local/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gdb"
-eraseall = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor tpwr enable' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'mon erase_mass' -ex 'detach' -ex 'quit';")
+eraseall = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'mon erase_mass' -ex 'detach' -ex 'quit';")
 os.system(eraseall)
 
-upload = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor tpwr enable' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'load ./"+first_part+"/"+first_part+".hex'" " -ex 'compare-sections' -ex 'detach' -ex kill -ex 'quit'" )
+upload = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'load ./"+first_part+"/"+first_part+".hex'" " -ex 'compare-sections' -ex 'detach' -ex kill -ex 'quit';" )
 os.system(upload)
 
 while(flag == 0):
@@ -378,6 +378,33 @@ data_file.close()
 port.close()
 os.system("rm ./"+first_part+"/product_id.hex")
 os.system("rm ./"+first_part+"/"+first_part+".hex")
+
+
+#Checking Final Status of board level testing
+
+##################################################################################
+#This part will check the final status of hardware testing. If status is 1 then###
+#upload the sense_pi firmware to board############################################
+##################################################################################
+fp_txt_input = "./"+first_part+'/'+first_part+"_output.txt"
+data_file = open(fp_txt_input, "r")
+status_flag = 0
+file_data = "START\n"
+while(file_data != "END\n"):
+    file_data = data_file.readline()
+    temp_title = extractTitles(file_data)
+    if(temp_title == "Status"):
+        temp_data = extractData(file_data)
+        if(temp_data == 1):
+            status_flag = 1
+if(status_flag == 1):
+    upload = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'load ./source_hex/SensePi_v_0_1_0.hex' -ex 'compare-sections' -ex 'detach' -ex kill -ex 'quit';" )
+    print(upload)
+    os.system(upload)
+
+        
+
+
 
 #Writing into yaml file:
 
