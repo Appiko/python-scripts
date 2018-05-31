@@ -364,16 +364,20 @@ os.system(eraseall)
 upload = str(GDB+" -ex 'target extended-remote /dev/ttyBmpGdb' -ex 'monitor swdp_scan' -ex 'attach 1' -ex 'load ./"+first_part+"/"+first_part+".hex'" " -ex 'compare-sections' -ex 'detach' -ex kill -ex 'quit';" )
 os.system(upload)
 
+
+prev_data = ""
 while(flag == 0):
     line_data = port.readline()
     if (line_data == "START\n"):
         flag = 1
 while (flag == 1) :
     line_data = (port.readline())
-    print(line_data)
-    data_file.write(line_data)
-    if(line_data == "END\n"):
-       flag =0
+    if(line_data != prev_data):
+        print(line_data)
+        data_file.write(line_data)
+        if(line_data == "END\n"):
+           flag =0
+    prev_data = line_data
 data_file.close()
 port.close()
 os.system("rm ./"+first_part+"/product_id.hex")
