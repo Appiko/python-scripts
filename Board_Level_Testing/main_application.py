@@ -195,6 +195,8 @@ first_part = product + revision + factory
 #creating directry with name = first_part
 try:
     os.system("mkdir "+first_part)
+    os.system("mkdir ../../board_testing_results")
+    os.system("mkdir ../../board_testing_results/"+first_part)
 except OSError: 
     pass
 
@@ -230,7 +232,7 @@ second_part = year + month + day
 #This part will count the number of board and generate entire product id which is#
 #to be written in the memory of board for further assesment#######################
 ##################################################################################
-fp = str("./"+first_part+"/"+first_part+".yaml")
+fp = str("../../board_testing_results/"+first_part+"/"+first_part+".yaml")
 os.system("touch "+fp)
 infile = open(fp, "r+")
 data = yaml.load(infile)    
@@ -348,7 +350,7 @@ product_id_hex.close()
 #part will also erase previous data and upload hex file. Output from UART will be#
 #saved in one text file which will be useful for debugging########################
 ##################################################################################
-fp_txt_input = "./"+first_part+'/'+first_part+"_output.txt"
+fp_txt_input = "../../board_testing_results/"+first_part+'/'+first_part+"_output.txt"
 os.system("touch "+fp_txt_input)
 data_file = open(fp_txt_input, "w")
 port = serial.Serial("/dev/ttyBmpTarg", baudrate=1000000, bytesize = serial.EIGHTBITS, timeout = 40)
@@ -382,6 +384,7 @@ data_file.close()
 port.close()
 os.system("rm ./"+first_part+"/product_id.hex")
 os.system("rm ./"+first_part+"/"+first_part+".hex")
+os.system("rmdir "+first_part)
 
 
 #Checking Final Status of board level testing
@@ -390,7 +393,7 @@ os.system("rm ./"+first_part+"/"+first_part+".hex")
 #This part will check the final status of hardware testing. If status is 1 then###
 #upload the sense_pi firmware to board############################################
 ##################################################################################
-fp_txt_input = "./"+first_part+'/'+first_part+"_output.txt"
+fp_txt_input = "../../board_testing_results/"+first_part+'/'+first_part+"_output.txt"
 data_file = open(fp_txt_input, "r")
 status_flag = 0
 file_data = "START\n"
@@ -419,7 +422,7 @@ if(status_flag == 1):
 ##################################################################################
 #Getting input from output data file 
 #Test data which is to be written in yaml file is exctracted from text files######
-fp_txt_input = "./"+first_part+'/'+first_part+"_output.txt"
+fp_txt_input = "../../board_testing_results/"+first_part+'/'+first_part+"_output.txt"
 txt_input = open(fp_txt_input, "r")
 title_list = getAllTitles(txt_input)
 txt_input.close()
@@ -435,13 +438,19 @@ yaml.dump(basic_info, outfile, indent = 4, default_flow_style = False)
 outfile.close()
 
 
+print("Board Number = "+board_no)
+file_exit_flag = 'n'
+while(not(file_exit_flag == 'y' or file_exit_flag == 'Y')):
+    print("Write the board number on board..!!")
+    file_exit_flag = raw_input("Done?(y/n):")
+
 #MySQL DATABASE:
 
 ##################################################################################
 #This part of code will load test data into table. This data might be useful for #
 #checking all the logs. And also might be useful to do some analysis if required##
 ##################################################################################
-fp_txt_input = "./"+first_part+'/'+first_part+"_output.txt"
+fp_txt_input = "../../board_testing_results/"+first_part+'/'+first_part+"_output.txt"
 txt_input = open(fp_txt_input, "r")
 conn = mysql_connect()
 mysql_cursor = conn.cursor()
@@ -471,10 +480,4 @@ conn.commit()
 mysql_cursor.close()
 conn.close()
 
-
-print("Board Number = "+board_no)
-file_exit_flag = 'n'
-while(not(file_exit_flag == 'y' or file_exit_flag == 'Y')):
-    print("Write the board number on board..!!")
-    file_exit_flag = raw_input("Done?(y/n):")
 
