@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
 		// Write headers
 		fileptr = fopen(argv[2], "w");
-		printf("Writing to %s", argv[2]);
+		printf("Writing to %s\n", argv[2]);
 		fprintf(fileptr, "P6\n%d %d\n255\n", PIX_W, PIX_H);
 
 		// Append data
